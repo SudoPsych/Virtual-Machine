@@ -1,12 +1,11 @@
 use crate::instr::*;
-use std::collections::HashMap;
 #[allow(non_camel_case_types)]
 
 pub struct vm {
 	pub regs: Vec<u32>,
-	pub memory: HashMap<u32, Vec<u32>>,
-	pub unmapped_segments: Vec<u32>,
-	pub max_mapped_segment: u32,
+	pub memory: Vec<Vec<u32>>,
+	pub unmapped_segments: Vec<usize>,
+	pub max_mapped_segment: usize,
 	pub program_counter: u32,
 	pub is_running: bool
 }
@@ -14,8 +13,7 @@ pub struct vm {
 impl vm {
 	
 	pub fn fetch(&mut self) -> u32 {
-		let vec_at_location = self.memory.get(&0).unwrap();
-		let instruction = vec_at_location[self.program_counter as usize];
+		let instruction = self.memory[0][self.program_counter as usize];
 		self.program_counter += 1;
 		instruction
 	}
