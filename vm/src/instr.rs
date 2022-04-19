@@ -35,17 +35,14 @@ pub fn sgl(vm: &mut vm, word: u32) {
 	// 1
 	// Segmented Load
 	let (a, b, c) = unpack_abc_regs(word);
-	let vec_at_location = vm.memory.get(&vm.regs[b]).unwrap();
-	vm.regs[a] = vec_at_location[vm.regs[c] as usize];
+	vm.regs[a] = vm.memory[vm.regs[b] as usize][vm.regs[c] as usize];
 }
 
 pub fn sgs(vm: &mut vm, word: u32) {
 	// 2
 	// Segmented Store
 	let (a, b, c) = unpack_abc_regs(word);
-	let vec_at_location: &mut Vec<u32> = vm.memory.get_mut(&vm.regs[a]).unwrap();
-	
-	vec_at_location[vm.regs[b] as usize] = vm.regs[c];
+	vm.memory[vm.regs[a] as usize][vm.regs[b] as usize] = vm.regs[c];
 }
 
 pub fn add(vm: &mut vm, word: u32) {
@@ -89,12 +86,12 @@ pub fn msg(vm: &mut vm, word: u32) {
 	
 	if vm.unmapped_segments.len() != 0 {
 		let segment_number = vm.unmapped_segments.pop().unwrap();
-		vm.memory.insert(segment_number, Vec::with_capacity(vm.regs[c] as usize));
-		vm.regs[b] = segment_number;
+		vm.memory[segment_number] = vec![0; vm.regs[c] as usize];
+		vm.regs[b] = segment_number as u32;
 	} else {
 		vm.max_mapped_segment += 1;
-		vm.memory.insert(vm.max_mapped_segment, Vec::with_capacity(vm.regs[c] as usize));
-		vm.regs[b] = vm.max_mapped_segment;
+		vm.memory.push(vec![0; vm.regs[c] as usize]);
+		vm.regs[b] = vm.max_mapped_segment as u32;
 	}
 }
 
@@ -103,8 +100,8 @@ pub fn usg(vm: &mut vm, word: u32) {
 	// Unmap Segment
 	let c = unpack_c_reg(word);
 	
-	vm.memory.remove(&vm.regs[c]);
-	vm.unmapped_segments.push(vm.regs[c]);
+	vm.memory[vm.regs[c] as usize].clear();
+	vm.unmapped_segments.push(vm.regs[c].try_into().unwrap());
 }
 
 pub fn out(vm: &mut vm, word: u32) {
@@ -119,8 +116,12 @@ pub fn inp(vm: &mut vm, word: u32) {
 	// Input
 	let c = unpack_c_reg(word);
 	let mut buffer: [u8; 1] = [0; 1];
-	let byte = io::stdin().read(&mut buffer);
-	vm.regs[c] = byte.unwrap() as u32;
+	let num = io::stdin().read(&mut buffer);
+	let value = match num {
+		Ok(byte) => byte as u32,
+		Err(_) => !0_u32
+	};
+	vm.regs[c] = value;
 }
 
 pub fn ldp(vm: &mut vm, word: u32) {
@@ -129,9 +130,8 @@ pub fn ldp(vm: &mut vm, word: u32) {
 	let (b, c) = unpack_bc_regs(word);
 	
 	if vm.regs[b] != 0 {
-		let vec_at_location = vm.memory.get(&vm.regs[b]).unwrap().to_owned();
-		vm.memory.insert(0, vec_at_location);
-		}
+		vm.memory[0] = vm.memory[vm.regs[b] as usize].clone();
+	}
 	vm.program_counter = vm.regs[c];
 }
 
