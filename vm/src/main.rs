@@ -2,7 +2,6 @@ use std::env;
 use std::fs::File;
 use std::io::Read;
 use rum::virtual_machine::vm;
-use std::collections::HashMap;
 
 fn main() {
     
@@ -28,19 +27,17 @@ fn main() {
     
     let mut rum = vm {
     	regs: vec![0_u32; 8],
-    	// war crime
-    	memory: HashMap::new(),
+    	memory: vec![words],
     	unmapped_segments: vec![],
     	max_mapped_segment: 0,
     	program_counter: 0,
     	is_running: true
     };
-    rum.memory.insert(0, words.clone());
     
     let mut instruction: u32;
     while rum.is_running {
     	instruction = rum.fetch();
-    	disas(instruction);
+    	// disas(instruction);
     	rum.execute(instruction);
     }
 }
@@ -55,7 +52,7 @@ fn disas(word: u32){
 	match opcode {
 		0  => println!("cdm %r{}, %r{}, %r{}", a, b, c),
 		1  => println!("sgl %r{}, %r{}, %r{}", a, b, c),
-		2  => println!("sgm %r{}, %r{}, %r{}", a, b, c),
+		2  => println!("sgs %r{}, %r{}, %r{}", a, b, c),
 		3  => println!("add %r{}, %r{}, %r{}", a, b, c),
 		4  => println!("mul %r{}, %r{}, %r{}", a, b, c),
 		5  => println!("div %r{}, %r{}, %r{}", a, b, c),
@@ -70,6 +67,6 @@ fn disas(word: u32){
 			let value = bitpack::bitpack::getu(word_u64, 25, 0) as u32;
 			let r = bitpack::bitpack::getu(word_u64, 3, 25);
 			println!("ldv %r{}, {}", r, value)},
-		_ => println!("Invalid Instruction")
+		_ => println!("data: {:#32b}", word)
 	}
 }
